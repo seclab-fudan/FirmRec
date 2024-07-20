@@ -1,0 +1,116 @@
+FROM cincan/binwalk:latest as extractor
+
+USER root
+
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update && apt upgrade -y
+RUN apt-get install -y fakeroot python3-dev python3-pip
+
+ENTRYPOINT ["/bin/bash"]
+
+##########################################################################################
+
+# Build Ghidra and firmrec-static
+
+FROM extractor as java-builder
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update -qy && apt-get install -y curl wget git bison flex build-essential unzip
+
+# RUN apt-get install -y openjdk-18-jdk
+ENV JDK_URL=https://download.java.net/java/GA/jdk18.0.2/f6ad4b4450fd4d298113270ec84f30ee/9/GPL/openjdk-18.0.2_linux-x64_bin.tar.gz
+ENV JDK_SHA256=cf06f41a3952038df0550e8cbc2baf0aa877c3ba00cca0dd26f73134f8baf0e6
+ENV JDK_FOLDER=jdk-18.0.2
+RUN cd /tmp && \
+    wget https://download.java.net/java/GA/jdk18.0.2/f6ad4b4450fd4d298113270ec84f30ee/9/GPL/openjdk-18.0.2_linux-x64_bin.tar.gz -q -O openjdk.tar.gz \
+    && echo "$JDK_SHA256 openjdk.tar.gz" | sha256sum -c - \
+    && tar -xzf openjdk.tar.gz \
+    && mv ${JDK_FOLDER} /root/jdk \
+    && rm openjdk.tar.gz
+ENV JAVA_HOME=/root/jdk
+ENV PATH=$JAVA_HOME/bin:$PATH
+
+
+ENV GRADLE_VERSION=7.6
+RUN wget https://services.gradle.org/distributions/gradle-${GRADLE_VERSION}-all.zip -P /tmp \
+  && unzip -d /opt/gradle /tmp/gradle-${GRADLE_VERSION}-all.zip \
+  && ln -s /opt/gradle/gradle-${GRADLE_VERSION}/bin/gradle /usr/bin/gradle
+
+ENV GITHUB_URL https://github.com/NationalSecurityAgency/ghidra.git
+RUN echo "[+] Cloning Ghidra..." \
+    && git clone --depth=1 --branch Ghidra_10.2.2_build ${GITHUB_URL} /root/git/ghidra \
+    && cd /root/git/ghidra \
+    && git checkout Ghidra_10.2.2_build
+
+WORKDIR /root/git/ghidra
+
+RUN echo "[+] Downloading dependencies..." \
+    && gradle --init-script gradle/support/fetchDependencies.gradle init
+
+RUN echo "[+] Building Ghidra..." \
+    && gradle buildNatives_linux64 \
+    && gradle sleighCompile \
+    && gradle buildGhidra
+
+WORKDIR /root/ghidra
+
+RUN echo "[+] Unzip Ghidra..." \
+    && unzip /root/git/ghidra/build/dist/ghidra*linux*.zip -d /tmp \
+    && mv /tmp/ghidra*/* /root/ghidra \
+    && chmod +x /root/ghidra/ghidraRun \
+    && rm -rf /root/ghidra/docs /root/ghidra/Extensions/Eclipse /root/ghidra/licenses
+
+
+RUN echo "[+] Building Ghidra Jar..." \
+    && /root/ghidra/support/buildGhidraJar > /dev/null
+
+# Build firmentry
+
+ENV MAVEN_VERSION 3.9.8
+RUN wget https://dlcdn.apache.org/maven/maven-3/${MAVEN_VERSION}/binaries/apache-maven-${MAVEN_VERSION}-bin.tar.gz -P /tmp \
+    && tar -xzf /tmp/apache-maven-${MAVEN_VERSION}-bin.tar.gz -C /opt \
+    && ln -s /opt/apache-maven-${MAVEN_VERSION}/bin/mvn /usr/bin/mvn
+
+COPY firmentry /root/firmentry
+
+RUN echo "[+] Building Static..." \
+    && mkdir -p /root/firmentry/analyzer/lib \
+    && mv ghidra.jar /root/firmentry/analyzer/lib \
+    && cd /root/firmentry && /root/firmentry/build_jar.sh
+
+##########################################################################################
+
+FROM java-builder as firmrec
+
+USER root
+WORKDIR /root
+
+RUN apt-get update -qy && apt-get install -y curl git bison flex build-essential unzip libffi-dev wget vim sudo
+RUN apt-get install -qy time fakechroot
+RUN apt-get install -qy postgresql postgresql-contrib
+
+USER postgres
+RUN pg_ctlcluster 11 main start && psql -c "CREATE ROLE root WITH SUPERUSER LOGIN PASSWORD 'firmrec';" && createdb root
+USER root
+
+RUN curl https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -o /tmp/miniconda.sh \
+    && bash /tmp/miniconda.sh -b -p /root/miniconda \
+    && rm /tmp/miniconda.sh
+ENV PATH=/root/miniconda/bin:$PATH
+RUN conda install -y python=3.9
+
+# Python depdencies
+COPY requirements.txt /tmp/requirements.txt
+RUN python3 -m pip install -r /tmp/requirements.txt && rm /tmp/requirements.txt
+
+# Copy files
+
+COPY firmrec ./firmrec
+COPY firmlib ./firmlib
+COPY scripts ./scripts
+COPY tests ./tests
+COPY extractor ./extractor
+COPY config.yaml ./config.yaml
+
+ENTRYPOINT ["/bin/bash"]
