@@ -1,0 +1,135 @@
+-- kill all connections to the database
+SELECT 
+    pg_terminate_backend(pid) 
+FROM 
+    pg_stat_activity 
+WHERE 
+    -- don't kill my own connection!
+    pid <> pg_backend_pid()
+    -- don't kill the connections to other databases
+    AND datname = 'firmrec'
+    ;
+
+-- backup
+
+-- view func
+SELECT
+    bin.firmware_id, bin.path, func.name
+FROM func
+    JOIN bin ON func.bin_id = bin.id
+;
+
+-- view input
+SELECT
+    input.keyword AS keyword,
+    bin.vendor AS vendor,
+    bin.firmware_id as firmware,
+    bin.path AS path,
+    to_hex(input.address) AS addr,
+    source_func.name AS source_func_name,
+    to_hex(source_func.address) AS source_func_addr,
+    input.model AS source_func_model,
+    caller_func.name AS caller_func_name,
+    to_hex(caller_func.address) AS caller_func_addr
+FROM input 
+    JOIN bin ON input.bin_id = bin.id
+    JOIN func AS source_func ON input.api_id = source_func.id
+    JOIN func AS caller_func ON input.caller = caller_func.id
+;
+
+-- view input with less field
+SELECT
+    input.id,
+    bin.vendor AS vendor,
+    bin.firmware_id as firmware,
+    bin.path AS path,
+    input.keyword AS keyword,
+    to_hex(input.address) AS addr,
+    source_func.name AS source_func_name,
+    json_extract_path(input.model::json, 'key_arg') AS key_arg,
+    json_extract_path(input.model::json, 'out_arg') AS out_arg,
+    caller_func.name AS caller_func_name
+FROM input 
+    JOIN bin ON input.bin_id = bin.id
+    JOIN func AS source_func ON input.api_id = source_func.id
+    JOIN func AS caller_func ON input.caller = caller_func.id
+;
+
+-- view input by dataflow
+SELECT
+    input.keyword AS keyword,
+    bin.vendor AS vendor,
+    bin.firmware_id as firmware,
+    bin.path AS path,
+    to_hex(input.address) AS addr,
+    source_func.name AS source_func_name,
+    to_hex(source_func.address) AS source_func_addr,
+    input.model AS source_func_model,
+    caller_func.name AS caller_func_name,
+    to_hex(caller_func.address) AS caller_func_addr,
+    df_callee.name AS df_callee_name,
+    input_dataflow_call.func_args AS df_args
+FROM input 
+    JOIN bin ON input.bin_id = bin.id
+    JOIN func AS source_func ON input.api_id = source_func.id
+    JOIN func AS caller_func ON input.caller = caller_func.id
+    JOIN input_dataflow_call ON input.id = input_dataflow_call.input_id
+    JOIN func AS df_callee ON input_dataflow_call.func_id = df_callee.id
+WHERE input.keyword is NULL
+    AND input_dataflow_call.type = 'from'
+    AND df_callee.name = 'sprintf'
+    AND input_dataflow_call.func_args::jsonb ? format('"%s"', 'delCap%d')
+;
+
+-- view data flow
+SELECT
+    input.keyword AS keyword,
+    to_hex(input.address) AS source_addr,
+    source_api.name AS source_api,
+    input.model AS model,
+    caller.name AS calller,
+    to_hex(input_dataflow_call.address) AS df_addr,
+    df_callee.name AS df_callee,
+    input_dataflow_call.func_args AS args
+FROM input_dataflow_call 
+    JOIN input ON input_dataflow_call.input_id = input.id 
+    JOIN func AS df_callee ON input_dataflow_call.func_id = df_callee.id
+    JOIN func AS source_api ON input.api_id = source_api.id
+    JOIN func AS caller ON input.caller = caller.id
+;
+
+-- inspect input from
+SELECT
+    from_func.name AS from_func,
+    idc.arg AS from_arg,
+    idc.func_args::jsonb AS args,
+    source_func.name AS source_func,
+    input.model::jsonb->'key_arg' AS key_arg
+FROM input_dataflow_call AS idc
+    JOIN input
+    ON idc.input_id=input.id
+    JOIN func AS from_func
+    ON idc.func_id=from_func.id 
+    JOIN func as source_func
+    ON api_id=source_func.id
+WHERE type='from'
+    AND from_func.name='sprintf'
+    AND idc.arg=0;
+
+-- view constant
+SELECT
+    bin.vendor AS vendor,
+    bin.firmware_id as firmware,
+    bin.path AS path,
+    to_hex(input.address) AS source_addr,
+    source_api.name AS source_api,
+    input.model AS model,
+    caller.name AS calller,
+    input_dataflow_const.const AS const,
+    input_dataflow_const.address AS ref_addr
+FROM input_dataflow_const
+    JOIN input ON input_dataflow_const.input_id = input.id 
+    JOIN func AS source_api ON input.api_id = source_api.id
+    JOIN func AS caller ON input.caller = caller.id
+    JOIN bin ON input.bin_id = bin.id
+;

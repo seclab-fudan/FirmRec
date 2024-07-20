@@ -1,0 +1,19 @@
+
+poc_info_dir: inout/poc_info # Vulnerability Proof-of-concept Information
+vuln_info_dir: inout/vuln_info # Other Vulnerability Information
+firmware_dir: inout/firmware # Base path to downloaded, extracted images, and unpacked firmware images
+
+firmrec_output_dir: inout # Output directory
+project_path: /root/inout/ghidra # Ghidra Projects Path
+emu_result_dir: inout/emu_results # Signatures Output Directory
+
+firmrec_static_jar: firmentry/firmrec-static.jar # Get input entries
+ghidra_headless_path: ghidra/support/analyzeHeadless
+
+db_name: firmrec # PSQL Input Entry Database Name
+db_user: root # PSQL DB User Names
+db_user_passwd: firmrec # PSQL DB Password
+
+llm_key: sk-dXH8f7Y7qhnKlIMOB6426d36E946463eA314E1261fA46c77 # LLM Key
+llm_url: https://4.0.wokaai.com/v1/chat/completions # LLM URL 
+llm_model: gpt-3.5-turbo # LLM Model
