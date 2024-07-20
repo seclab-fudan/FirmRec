@@ -1,0 +1,60 @@
+
+CREATE TABLE IF NOT EXISTS bin (
+    id BIGSERIAL PRIMARY KEY,
+    vendor TEXT NOT NULL,
+    firmware_id TEXT NOT NULL,
+    path TEXT NOT NULL,
+    hash TEXT NOT NULL,
+    base_addr BIGINT NOT NULL,
+    UNIQUE (vendor, firmware_id, path)
+    );
+CREATE TABLE IF NOT EXISTS func (
+    id BIGSERIAL PRIMARY KEY,
+    bin_id BIGINT REFERENCES bin(id) ON DELETE CASCADE NOT NULL,
+    address BIGINT NOT NULL,
+    name TEXT,
+    extra_info TEXT, -- Extra information, such as MIPS register value like '{"t9": 0x8000, "gp": 0x8000}'
+    UNIQUE (bin_id, address)
+    );
+CREATE TABLE IF NOT EXISTS func_call (
+    id BIGSERIAL PRIMARY KEY,
+    caller BIGINT NOT NULL REFERENCES func(id) ON DELETE CASCADE NOT NULL,
+    callee BIGINT NOT NULL REFERENCES func(id) ON DELETE CASCADE NOT NULL,
+    UNIQUE (caller, callee)
+    );
+CREATE TABLE IF NOT EXISTS func_string (
+    id BIGSERIAL PRIMARY KEY,
+    func_id BIGINT REFERENCES func(id) ON DELETE CASCADE NOT NULL,
+    address BIGINT NOT NULL,
+    string TEXT NOT NULL,
+    UNIQUE (func_id, address, string)
+);
+CREATE TABLE IF NOT EXISTS input (
+    id BIGSERIAL PRIMARY KEY,
+    bin_id BIGINT REFERENCES bin(id) ON DELETE CASCADE NOT NULL,
+    api_id BIGINT REFERENCES func(id) ON DELETE CASCADE NOT NULL, -- API函数
+    caller BIGINT REFERENCES func(id) ON DELETE CASCADE NOT NULL, -- 调用者
+    address BIGINT NOT NULL, -- 调用地址
+    keyword TEXT, -- 关键字
+    model TEXT, -- json格式的source函数调用信息，如 '{"type": "kv", "ouput": 1}'
+    UNIQUE (bin_id, address)
+    );
+CREATE TABLE IF NOT EXISTS input_dataflow_call (
+    id BIGSERIAL PRIMARY KEY,
+    type CHAR(4) NOT NULL, -- 'flow' or 'from'
+    input_id BIGINT REFERENCES input(id) ON DELETE CASCADE NOT NULL,
+    address BIGINT NOT NULL, -- 调用地址
+    func_id BIGINT REFERENCES func(id) ON DELETE CASCADE NOT NULL,
+    arg INT NOT NULL, -- 参数序号
+    func_args TEXT NOT NULL, -- 调用的函数的参数，如 '["", "dstPort", "", ""]'
+    UNIQUE (type, input_id, address, arg),
+    CONSTRAINT type_check CHECK (type IN ('flow', 'from'))
+    );
+CREATE TABLE IF NOT EXISTS input_dataflow_const (
+    id BIGSERIAL PRIMARY KEY,
+    type CHAR(4) NOT NULL, -- 'flow' or 'from'
+    input_id BIGINT NOT NULL REFERENCES input(id) ON DELETE CASCADE,
+    address BIGINT NOT NULL, -- 引用地址
+    const TEXT NOT NULL,
+    UNIQUE (type, input_id, address, const)
+    );
