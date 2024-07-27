@@ -109,7 +109,6 @@ RUN python3 -m pip install -r /tmp/requirements.txt && rm /tmp/requirements.txt
 COPY firmrec ./firmrec
 COPY firmlib ./firmlib
 COPY scripts ./scripts
-COPY tests ./tests
 COPY extractor ./extractor
 COPY config.yaml ./config.yaml
 
