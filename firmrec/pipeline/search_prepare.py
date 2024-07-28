@@ -82,9 +82,12 @@ GROUP BY
 def load_unnamed_input_entries(conn, cached_path, force=False):
     """Load unnamed input entries"""
     if not force and os.path.exists(cached_path):
-        with open(cached_path, "r", encoding="utf-8") as cached_fp:
-            entries = json.load(cached_fp)
-        return entries
+        try:
+            with open(cached_path, "r", encoding="utf-8") as cached_fp:
+                entries = json.load(cached_fp)
+            return entries
+        except:
+            print(f"Broken {cached_path} .. Reloading")
 
     cur = conn.cursor()
 
@@ -114,9 +117,12 @@ def load_unnamed_input_entries(conn, cached_path, force=False):
 def load_named_input_entries(conn, cached_path, func_models, force=False):
     """Load named input entries"""
     if not force and os.path.exists(cached_path):
-        with open(cached_path, "r", encoding="utf-8") as cached_fp:
-            entries = json.load(cached_fp)
-        return entries
+        try:
+            with open(cached_path, "r", encoding="utf-8") as cached_fp:
+                entries = json.load(cached_fp)
+            return entries
+        except:
+            print(f"Broken {cached_path} .. Reloading")
 
     cmd = FETCH_NAMED_ENTRIES_CMD
     cur = conn.cursor()
@@ -169,15 +175,19 @@ def load_name_sim_dictionary(
     dictionary = dict()
 
     if os.path.exists(cached_path):
-        with open(cached_path, "r", encoding="utf-8") as fp:
-            reader = csv.reader(fp)
-            for row in reader:
-                if row[2].lower().startswith("yes"):
-                    vuln_name = row[1].lower()
-                    name = row[0].lower()
-                    if vuln_name not in dictionary:
-                        dictionary[vuln_name] = set()
-                    dictionary[vuln_name].add(name)
+        try:
+            with open(cached_path, "r", encoding="utf-8") as fp:
+                reader = csv.reader(fp)
+                for row in reader:
+                    if row[2].lower().startswith("yes"):
+                        vuln_name = row[1].lower()
+                        name = row[0].lower()
+                        if vuln_name not in dictionary:
+                            dictionary[vuln_name] = set()
+                        dictionary[vuln_name].add(name)
+        except:
+            print(f"Broken {cached_path}")
+            return dictionary
 
     return dictionary
 

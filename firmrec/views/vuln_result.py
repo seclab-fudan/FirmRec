@@ -114,6 +114,8 @@ class VulnResultItemView:
         """
         if cls.chain_info:
             return
+        if not os.path.isfile(chain_info_path):
+            return 
         with open(chain_info_path, "r", encoding="utf-8") as chain_fp:
             chain_info = json.load(chain_fp)
         cls.chain_info = chain_info
