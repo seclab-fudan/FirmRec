@@ -58,6 +58,10 @@ After input preparation, you can run FirmRec with previously built docker image 
 
 The firmware dataset is available at [Firmware Dataset](https://mega.nz/file/rdVyBYhT#JxVNKjgGEQTIxMUJMjRZEljyNNakJGgU8trmN5KU5L4)
 
+## Vulnerabilities
+
+We list CVEs detected by FirmRec at [VULNS.md](VULNS.md)
+
 ## License
 
 See the [LICENSE](LICENSE) file for more details.
