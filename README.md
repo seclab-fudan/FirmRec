@@ -35,7 +35,7 @@ If you use FirmRec for your academic work, we would appreciate citations using t
 
 The current FirmRec release is meant to be used with [docker](https://www.docker.com). So firstly, you need to build firmrec docker with following steps:
 
-1. Build the base docker image with `docker build -f Dockerfile-base -t firmrec-base .`. This command build up all dependencies and input entry identification module.
+1. Build the base docker image with `docker build -f Dockerfile-base -t firmrec-base .`. This command build up all dependencies and input entry identification module. Alternatively, You can also pull the pre-built image with `docker pull xylearn/firmrec-base:latest && docker tag xylearn/firmrec-base:latest firmrec-base`.
 2. Build working docker image with `make build`, which just copies firmrec source code into a new docker images. When FirmRec code or `config.yaml` is modified, this command should be executed to update the docker image.
 
 Then, prepare inputs for firmrec. The docker container uses `inout` directory as a data directory to read inputs from and store outputs into. We've prepared a sample archive of inout. You can download [this archive](https://github.com/seclab-fudan/FirmRec/releases/download/init/inout.tar.gz) and extract it to the project root.
