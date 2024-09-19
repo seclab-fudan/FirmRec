@@ -46,13 +46,14 @@ Here are things that have been prepared in inout directory for running FirmRec:
 2. Target firmware images at `inout/firmware/images`
 3. Task list specified by `inout/experiment.json`
 
+You can also apply FirmRec to your own datasets by structure your dataset in inout directory. Please refer to [INPUT.md](INPUT.md) for more details.
+
 To use LLM for input entry searching during vulnerability detection, it is required to configure `llm_key`, `llm_url`, and `llm_model` fields in `config.yaml`.
 
 After input preparation, you can run FirmRec with previously built docker image with the following steps:
 
 1. Spawn a docker shell by executing `make start` under project root directory.
 2. Execute `python -m firmrec.pipeline all` in the docker shell. This command will automatically finish all FirmRec steps and show vulnerability detection results. More details of `firmrec.pipeline` are presented in [firmrec/pipeline/README.md](firmrec/pipeline/README.md).
-
 
 ## Dataset
 
