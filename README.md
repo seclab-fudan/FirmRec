@@ -13,7 +13,7 @@ Firmrec is a recurring vulnerability detector for embedded firmware.
 We present our approach and the findings of this work in the following research paper (available [here](public/FirmRec-Paper.pdf)):
 
 **Accurate and Efficient Recurring Vulnerability Detection for IoT Firmware.**
-Haoyu Xiao, Yuan Zhang, Minghang Shen, Chaoyang Lin, Can Zhang, Shengli Liu, Min Yang.
+[Haoyu Xiao](https://haoyu-xiao.github.io), Yuan Zhang, Minghang Shen, Chaoyang Lin, Can Zhang, Shengli Liu, Min Yang.
 In Proceedings of the 31st ACM Conference on Computer and Communications Security (CCS), Salt Lake City, USA, October 14-18, 2024.
 
 If you use FirmRec for your academic work, we would appreciate citations using this Bibtex entry:
