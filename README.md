@@ -57,7 +57,8 @@ After input preparation, you can run FirmRec with previously built docker image 
 
 ## Dataset
 
-The firmware dataset is available at [Firmware Dataset](https://mega.nz/file/rdVyBYhT#JxVNKjgGEQTIxMUJMjRZEljyNNakJGgU8trmN5KU5L4)
+The firmware dataset is available [here](https://mega.nz/file/rdVyBYhT#JxVNKjgGEQTIxMUJMjRZEljyNNakJGgU8trmN5KU5L4) or you can download it through [Baidu Netdisk](https://pan.baidu.com/s/1lyOrZelK6uAleYqwAYltZw?pwd=firm).
+The known vulnerability dataset is available [here](https://pan.baidu.com/s/1T8DN9LUIu4kGmzeKoB2IXw?pwd=firm).
 
 ## Vulnerabilities
 
